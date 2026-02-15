@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.turbo
+dist
+release
+dist-renderer
+coverage
+.vite
+playwright-report
+tsconfig.tsbuildinfo
+.DS_Store
