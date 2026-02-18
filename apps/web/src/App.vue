@@ -18,6 +18,7 @@ const { count } = storeToRefs(counter);
       <CowButton label="Shared UI Button" />
       <RouterLink to="/">Home</RouterLink>
       <RouterLink to="/about">About</RouterLink>
+      <RouterLink to="/chat-virtual">Chat Virtual Demo</RouterLink>
     </div>
     <RouterView />
   </main>
