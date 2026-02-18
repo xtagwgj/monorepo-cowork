@@ -16,6 +16,7 @@ const { count } = storeToRefs(counter);
     <div style="display:flex;gap:8px;">
       <button @click="counter.increment">+1</button>
       <CowButton label="Shared UI Button" />
+      <RouterLink to="/">Home</RouterLink>
       <RouterLink to="/about">About</RouterLink>
     </div>
     <RouterView />
