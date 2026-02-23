@@ -36,7 +36,8 @@ const scroller = useTemplateRef<HTMLDivElement>("scroller");
 const heightMap = ref<Record<string, number>>({});
 const viewportHeight = ref(640);
 const scrollTop = ref(0);
-const prependAnchor = ref<{ id: string; offset: number } | null>(null);
+const liveAnchor = ref<{ id: string; offset: number } | null>(null);
+const pendingAnchor = ref<{ id: string; offset: number } | null>(null);
 
 function rowSizeById(itemId: string): number {
   return (heightMap.value[itemId] ?? props.estimatedItemHeight) + props.itemGap;
@@ -105,14 +106,10 @@ const bottomPadding = computed(() => {
 function onScroll(): void {
   if (!scroller.value) return;
   scrollTop.value = scroller.value.scrollTop;
+  captureAnchor();
 
   if (scrollTop.value <= props.topLoadOffset && props.hasMoreTop && !props.loadingTop) {
-    const anchorIndex = firstVisibleIndex.value;
-    const anchorItem = props.items[anchorIndex];
-    const anchorTop = offsets.value[anchorIndex] ?? 0;
-    if (anchorItem) {
-      prependAnchor.value = { id: anchorItem.id, offset: scrollTop.value - anchorTop };
-    }
+    pendingAnchor.value = liveAnchor.value ? { ...liveAnchor.value } : null;
     emit("loadTop");
   }
 
@@ -126,14 +123,32 @@ function onResize(itemId: string, size: number): void {
   if (size <= 0) return;
   if (heightMap.value[itemId] === size) return;
   heightMap.value = { ...heightMap.value, [itemId]: size };
-  if (prependAnchor.value && scroller.value) {
-    const anchorIdx = props.items.findIndex((x) => x.id === prependAnchor.value?.id);
+  if (pendingAnchor.value && scroller.value) {
+    const anchorIdx = props.items.findIndex((x) => x.id === pendingAnchor.value?.id);
     if (anchorIdx >= 0) {
       const anchorOffsetTop = offsets.value[anchorIdx] ?? 0;
-      scroller.value.scrollTop = anchorOffsetTop + prependAnchor.value.offset;
+      scroller.value.scrollTop = anchorOffsetTop + pendingAnchor.value.offset;
       scrollTop.value = scroller.value.scrollTop;
     }
   }
+}
+
+function captureAnchor(): void {
+  if (props.items.length === 0) {
+    liveAnchor.value = null;
+    return;
+  }
+  const anchorIndex = firstVisibleIndex.value;
+  const anchorItem = props.items[anchorIndex];
+  const anchorTop = offsets.value[anchorIndex] ?? 0;
+  if (!anchorItem) {
+    liveAnchor.value = null;
+    return;
+  }
+  liveAnchor.value = {
+    id: anchorItem.id,
+    offset: scrollTop.value - anchorTop
+  };
 }
 
 let resizeObserver: ResizeObserver | null = null;
@@ -141,6 +156,7 @@ let resizeObserver: ResizeObserver | null = null;
 onMounted(() => {
   if (!scroller.value) return;
   viewportHeight.value = scroller.value.clientHeight;
+  captureAnchor();
   resizeObserver = new ResizeObserver(() => {
     viewportHeight.value = scroller.value?.clientHeight ?? viewportHeight.value;
   });
@@ -153,18 +169,35 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => props.items.length,
+  () => props.items.map((item) => item.id),
+  (newIds, oldIds) => {
+    if (!scroller.value || pendingAnchor.value) return;
+    if (newIds.length === oldIds.length && newIds.every((id, idx) => id === oldIds[idx])) return;
+
+    const isTailAppend =
+      newIds.length >= oldIds.length && oldIds.every((oldId, idx) => newIds[idx] === oldId);
+
+    if (!isTailAppend && liveAnchor.value) {
+      pendingAnchor.value = { ...liveAnchor.value };
+    }
+  },
+  { flush: "pre" }
+);
+
+watch(
+  () => props.items.map((item) => item.id),
   async () => {
-    if (!prependAnchor.value || !scroller.value) return;
+    if (!pendingAnchor.value || !scroller.value) return;
     await nextTick();
-    const anchorIdx = props.items.findIndex((x) => x.id === prependAnchor.value?.id);
+    const anchorIdx = props.items.findIndex((x) => x.id === pendingAnchor.value?.id);
     if (anchorIdx >= 0) {
       const anchorOffsetTop = offsets.value[anchorIdx] ?? 0;
-      scroller.value.scrollTop = anchorOffsetTop + prependAnchor.value.offset;
+      scroller.value.scrollTop = anchorOffsetTop + pendingAnchor.value.offset;
       scrollTop.value = scroller.value.scrollTop;
+      captureAnchor();
     }
     requestAnimationFrame(() => {
-      prependAnchor.value = null;
+      pendingAnchor.value = null;
     });
   }
 );
