@@ -6,21 +6,30 @@ const props = withDefaults(
   defineProps<{
     items: T[];
     overscan: number;
+    itemGap?: number;
     estimatedItemHeight?: number;
     hasMoreTop?: boolean;
     loadingTop?: boolean;
     topLoadOffset?: number;
+    hasMoreBottom?: boolean;
+    loadingBottom?: boolean;
+    bottomLoadOffset?: number;
   }>(),
   {
+    itemGap: 10,
     estimatedItemHeight: 120,
     hasMoreTop: false,
     loadingTop: false,
-    topLoadOffset: 120
+    topLoadOffset: 120,
+    hasMoreBottom: false,
+    loadingBottom: false,
+    bottomLoadOffset: 180
   }
 );
 
 const emit = defineEmits<{
   loadTop: [];
+  loadBottom: [];
 }>();
 
 const scroller = useTemplateRef<HTMLDivElement>("scroller");
@@ -29,16 +38,22 @@ const viewportHeight = ref(640);
 const scrollTop = ref(0);
 const prependAnchor = ref<{ id: string; offset: number } | null>(null);
 
+function rowSizeById(itemId: string): number {
+  return (heightMap.value[itemId] ?? props.estimatedItemHeight) + props.itemGap;
+}
+
 const offsets = computed(() => {
   const acc: number[] = [0];
   for (const item of props.items) {
-    const h = heightMap.value[item.id] ?? props.estimatedItemHeight;
-    acc.push(acc[acc.length - 1]! + h);
+    acc.push(acc[acc.length - 1]! + rowSizeById(item.id));
   }
   return acc;
 });
 
-const totalHeight = computed(() => offsets.value[offsets.value.length - 1] ?? 0);
+const totalHeight = computed(() => {
+  if (props.items.length === 0) return 0;
+  return Math.max(0, (offsets.value[offsets.value.length - 1] ?? 0) - props.itemGap);
+});
 
 function findStartByOffset(target: number): number {
   const arr = offsets.value;
@@ -66,7 +81,7 @@ const visibleCount = computed(() => {
   let cursor = firstVisibleIndex.value;
   let covered = 0;
   while (cursor < props.items.length && covered < viewportHeight.value) {
-    covered += heightMap.value[props.items[cursor]!.id] ?? props.estimatedItemHeight;
+    covered += rowSizeById(props.items[cursor]!.id);
     cursor += 1;
     count += 1;
   }
@@ -79,13 +94,18 @@ const renderEnd = computed(() => Math.min(props.items.length - 1, firstVisibleIn
 const renderedItems = computed(() => props.items.slice(renderStart.value, renderEnd.value + 1));
 const topPadding = computed(() => offsets.value[renderStart.value] ?? 0);
 const bottomPadding = computed(() => {
-  const endOffset = offsets.value[renderEnd.value + 1] ?? 0;
+  if (props.items.length === 0) return 0;
+  let endOffset = offsets.value[renderEnd.value + 1] ?? 0;
+  if (renderEnd.value === props.items.length - 1) {
+    endOffset -= props.itemGap;
+  }
   return Math.max(0, totalHeight.value - endOffset);
 });
 
 function onScroll(): void {
   if (!scroller.value) return;
   scrollTop.value = scroller.value.scrollTop;
+
   if (scrollTop.value <= props.topLoadOffset && props.hasMoreTop && !props.loadingTop) {
     const anchorIndex = firstVisibleIndex.value;
     const anchorItem = props.items[anchorIndex];
@@ -94,6 +114,11 @@ function onScroll(): void {
       prependAnchor.value = { id: anchorItem.id, offset: scrollTop.value - anchorTop };
     }
     emit("loadTop");
+  }
+
+  const rest = totalHeight.value - (scrollTop.value + viewportHeight.value);
+  if (rest <= props.bottomLoadOffset && props.hasMoreBottom && !props.loadingBottom) {
+    emit("loadBottom");
   }
 }
 
@@ -149,6 +174,17 @@ defineExpose({
     if (!scroller.value) return;
     scroller.value.scrollTop = scroller.value.scrollHeight;
     scrollTop.value = scroller.value.scrollTop;
+  },
+  scrollToTop: () => {
+    if (!scroller.value) return;
+    scroller.value.scrollTop = 0;
+    scrollTop.value = 0;
+  },
+  scrollToIndex: (index: number) => {
+    if (!scroller.value || index < 0 || index >= props.items.length) return;
+    const targetOffset = offsets.value[index] ?? 0;
+    scroller.value.scrollTop = targetOffset;
+    scrollTop.value = targetOffset;
   }
 });
 </script>
@@ -156,7 +192,12 @@ defineExpose({
 <template>
   <div ref="scroller" class="virtual-scroller" @scroll="onScroll">
     <div :style="{ height: `${topPadding}px` }" />
-    <div v-for="item in renderedItems" :key="item.id" class="virtual-row">
+    <div
+      v-for="(item, idx) in renderedItems"
+      :key="item.id"
+      class="virtual-row"
+      :style="{ marginBottom: idx === renderedItems.length - 1 ? '0px' : `${itemGap}px` }"
+    >
       <MeasuredRow :item-id="item.id" @resize="onResize">
         <slot name="default" :item="item" />
       </MeasuredRow>
@@ -173,13 +214,5 @@ defineExpose({
   border-radius: 14px;
   border: 1px solid #cbd5e1;
   background: #f8fafc;
-}
-
-.virtual-row {
-  margin-bottom: 10px;
-}
-
-.virtual-row:last-child {
-  margin-bottom: 0;
 }
 </style>
