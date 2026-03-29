@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-describe("electron app", () => {
+describe("desktop app", () => {
   it("basic test", () => {
-    expect("electron").toContain("lect");
+    expect("tauri").toContain("aur");
   });
 });

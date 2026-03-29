@@ -6,6 +6,6 @@
     { "path": "./packages/ui" },
     { "path": "./apps/web" },
     { "path": "./apps/docs" },
-    { "path": "./apps/electron" }
+    { "path": "./apps/desktop" }
   ]
 }

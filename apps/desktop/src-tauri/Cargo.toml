@@ -1,0 +1,22 @@
+[package]
+name = "cowork-desktop"
+version = "0.1.0"
+description = "Cowork desktop shell powered by Tauri"
+authors = ["cowork"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"
+strip = true

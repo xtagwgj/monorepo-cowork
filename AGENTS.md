@@ -8,7 +8,7 @@ This document provides guidelines for agents working in this monorepo.
 - **Package Manager**: pnpm 9.15.4
 - **TypeScript**: Strict mode enabled
 - **Testing**: Vitest
-- **Apps**: web (Vue 3), electron (desktop), docs (Vue 3)
+- **Apps**: web (Vue 3), desktop (Tauri + Vue 3), docs (Vue 3)
 - **Packages**: ui, utils, types, config-eslint
 
 ## Commands
@@ -60,7 +60,7 @@ npx vitest
 | Package | Commands |
 |---------|----------|
 | apps/web | `dev`, `build`, `typecheck`, `test` |
-| apps/electron | `dev`, `build`, `typecheck`, `test`, `start`, `dist` |
+| apps/desktop | `dev`, `build`, `typecheck`, `test` |
 | apps/docs | `dev`, `build`, `typecheck`, `test` |
 | packages/ui | `dev`, `build`, `typecheck`, `test` |
 | packages/utils | `build`, `typecheck`, `test` |
@@ -190,12 +190,11 @@ Use `catalog:` in package.json for shared dependency versions:
 "vitest": "catalog:"
 ```
 
-#### Electron Main Process
+#### Tauri Desktop
 
-- Use `import.meta.url` and `fileURLToPath` for `__dirname` in ESM
-- Always use `contextIsolation: true` and `nodeIntegration: false`
-- Use IPC handlers for main-renderer communication
-- Discard promise returns with `void`: `void mainWindow.loadURL(url)`
+- Prefer Tauri 2 when replacing Electron desktop shells
+- Keep Vue UI in the Vite app and isolate Rust commands to `src-tauri/src/main.rs`
+- Wrap raw `invoke()` calls in typed composables before they reach components
 
 ## Git Conventions
 
@@ -207,4 +206,4 @@ Use `catalog:` in package.json for shared dependency versions:
 - [Vue 3 Docs](https://vuejs.org/)
 - [Vitest Docs](https://vitest.dev/)
 - [TypeScript Docs](https://www.typescriptlang.org/)
-- [Electron Docs](https://www.electronjs.org/)
+- [Tauri Docs](https://tauri.app/)

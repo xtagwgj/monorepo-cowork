@@ -1,6 +1,7 @@
 node_modules
 .pnpm-store
 .turbo
+.cargo
 dist
 release
 dist-renderer
@@ -9,3 +10,11 @@ coverage
 playwright-report
 tsconfig.tsbuildinfo
 .DS_Store
+target
+src-tauri/target
+apps/desktop/src-tauri/target
+apps/desktop/dist
+apps/desktop/release
+apps/desktop/.turbo
+apps/desktop/node_modules
+apps/desktop/src-tauri/gen

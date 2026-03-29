@@ -1,26 +1,29 @@
 {
-  "name": "@cowork/web",
+  "name": "@cowork/desktop",
   "version": "0.0.0",
   "private": true,
+  "description": "Cowork desktop application powered by Tauri",
+  "author": "cowork",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -p tsconfig.json --noEmit && vite build",
+    "dev": "tauri dev",
+    "dev:web": "vite --host 0.0.0.0 --port 1420",
+    "build": "vue-tsc -p tsconfig.json --noEmit && tauri build",
+    "build:web": "vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc -p tsconfig.json --noEmit",
-    "lint": "echo \"skip lint for web\"",
-    "test": "vitest run"
+    "lint": "echo \"skip lint for desktop\"",
+    "test": "vitest run",
+    "tauri": "tauri"
   },
   "dependencies": {
-    "@cowork/ui": "workspace:*",
     "@cowork/utils": "workspace:*",
-    "@vueuse/core": "catalog:",
-    "pinia": "catalog:",
+    "@tauri-apps/api": "^2.0.0",
     "shadcn-vue": "^0.11.3",
-    "vue": "catalog:",
-    "vue-router": "catalog:"
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
