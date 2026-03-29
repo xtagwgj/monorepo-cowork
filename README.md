@@ -39,6 +39,8 @@ pnpm dev
 pnpm --filter @cowork/desktop dev
 ```
 
+桌面端开发说明见 [apps/desktop/README.md](/Users/xtagwgj/projects/monorepo-cowork/apps/desktop/README.md)。
+
 ## 版本发布
 
 ```bash

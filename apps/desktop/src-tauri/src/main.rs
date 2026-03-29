@@ -1,31 +1,26 @@
-use serde::Serialize;
+mod commands;
+mod domain;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct DesktopSummary {
-    app_name: String,
-    tauri_version: String,
-    target_triple: String,
-    profile: String,
-}
-
-#[tauri::command]
-fn desktop_summary(app: tauri::AppHandle) -> DesktopSummary {
-    DesktopSummary {
-        app_name: app.package_info().name.clone(),
-        tauri_version: "2.x".to_string(),
-        target_triple: format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH),
-        profile: if cfg!(debug_assertions) {
-            "debug".to_string()
-        } else {
-            "release".to_string()
-        },
-    }
-}
+use commands::{app, files, system};
+use domain::sessions::SessionState;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![desktop_summary])
+        .manage(SessionState::default())
+        .invoke_handler(tauri::generate_handler![
+            app::desktop_summary,
+            files::close_read_session,
+            files::close_write_session,
+            files::copy_file_streaming,
+            files::flush_write_session,
+            files::list_directory,
+            files::open_read_session,
+            files::open_write_session,
+            files::read_chunk,
+            files::write_chunk,
+            system::open_path_in_system,
+            system::pick_folder
+        ])
         .run(tauri::generate_context!())
         .expect("failed to run Tauri application");
 }

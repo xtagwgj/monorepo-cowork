@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import FileWorkbench from "@/components/desktop/FileWorkbench.vue";
 import DesktopStatusCard from "@/components/desktop/DesktopStatusCard.vue";
 import Button from "@/components/ui/Button.vue";
 import { useDesktopSummary } from "@/composables/useDesktopSummary";
@@ -36,6 +37,8 @@ onMounted(() => {
       :summary="summary"
       @refresh="refresh"
     />
+
+    <FileWorkbench />
   </section>
 </template>
 
