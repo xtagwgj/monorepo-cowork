@@ -10,13 +10,15 @@
 - `src/components/desktop/FileWorkbench.vue`: file IO demo and manual test surface.
 - `src/composables/useDesktopSummary.ts`: runtime summary loader.
 - `src/composables/useFileWorkbench.ts`: typed frontend wrapper around Tauri commands for file and system operations.
+- `src/composables/useI18n.ts`: locale detection and string lookup. Chinese is used when the system language starts with `zh`; all other locales fall back to English.
 
 ### Backend
 
 - `src-tauri/src/main.rs`: Tauri bootstrap only. It wires shared state and registers commands.
 - `src-tauri/src/commands/app.rs`: app/runtime metadata commands.
 - `src-tauri/src/commands/files.rs`: high-throughput file commands, including chunked sessions and streaming copy.
-- `src-tauri/src/commands/system.rs`: OS integration such as opening a path and choosing a folder.
+- `src-tauri/src/commands/system.rs`: OS integration such as opening a path and choosing files or folders.
+- `src-tauri/src/domain/access.rs`: allowlist enforcement for filesystem and shell operations.
 - `src-tauri/src/domain/models.rs`: serde request/response models shared by commands.
 - `src-tauri/src/domain/sessions.rs`: buffered session state and chunk sizing rules.
 - `src-tauri/src/domain/error.rs`: small shared error type for Rust commands.
@@ -29,6 +31,13 @@
   - call `copy_file_streaming` to keep the whole copy in Rust.
 - `normalize_chunk_size()` clamps transfer chunks to `1..=8 MiB`, which is a practical balance between syscall overhead and memory usage.
 - The implementation is intended for multi-GB files and avoids loading whole files into memory.
+
+## Access Boundaries
+
+- Filesystem and shell actions are guarded by `AccessPolicy`.
+- Built-in trusted roots include the workspace plus the user's Home, Desktop, Documents, and Downloads directories.
+- Paths selected via system file or folder pickers are registered as approved roots for the current app session.
+- Raw typed paths outside these trusted or approved roots are rejected.
 
 ## Command Conventions
 
@@ -45,6 +54,7 @@
 - Vue:
   - keep Tauri `invoke()` calls inside composables so components stay easy to test.
   - if the file workbench grows, split feature UI from command orchestration before adding component tests.
+  - keep locale logic in pure helpers or composables so it can be covered by Vitest.
 
 ## Common Tasks
 

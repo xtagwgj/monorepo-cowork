@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import Button from "@/components/ui/Button.vue";
 import type { DesktopSummary } from "@/composables/useDesktopSummary";
+import { useDesktopI18n } from "@/composables/useI18n";
+
+const { t } = useDesktopI18n();
 
 defineProps<{
   errorMessage: string | null;
@@ -18,11 +21,11 @@ const emit = defineEmits<{
   <section class="status-card">
     <div class="status-card__header">
       <div>
-        <p class="status-card__eyebrow">Desktop Runtime</p>
+        <p class="status-card__eyebrow">{{ t("runtime.eyebrow") }}</p>
         <h2 class="status-card__title">{{ statusLabel }}</h2>
       </div>
       <Button :disabled="isLoading" variant="outline" @click="emit('refresh')">
-        {{ isLoading ? "Refreshing..." : "Refresh" }}
+        {{ isLoading ? t("runtime.refreshing") : t("runtime.refresh") }}
       </Button>
     </div>
 
@@ -32,25 +35,25 @@ const emit = defineEmits<{
 
     <dl v-else-if="summary" class="status-card__grid">
       <div class="status-card__item">
-        <dt>App</dt>
+        <dt>{{ t("runtime.app") }}</dt>
         <dd>{{ summary.appName }}</dd>
       </div>
       <div class="status-card__item">
-        <dt>Tauri</dt>
+        <dt>{{ t("runtime.tauri") }}</dt>
         <dd>{{ summary.tauriVersion }}</dd>
       </div>
       <div class="status-card__item">
-        <dt>Target</dt>
+        <dt>{{ t("runtime.target") }}</dt>
         <dd>{{ summary.targetTriple }}</dd>
       </div>
       <div class="status-card__item">
-        <dt>Profile</dt>
+        <dt>{{ t("runtime.profile") }}</dt>
         <dd>{{ summary.profile }}</dd>
       </div>
     </dl>
 
     <p v-else class="status-card__empty">
-      Start the Tauri shell to fetch runtime metadata from Rust.
+      {{ t("runtime.empty") }}
     </p>
   </section>
 </template>

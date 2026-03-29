@@ -42,6 +42,12 @@ pub struct FileEntry {
     pub is_dir: bool,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PickedPath {
+    pub path: String,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenWriteSessionPayload {

@@ -4,7 +4,9 @@ import FileWorkbench from "@/components/desktop/FileWorkbench.vue";
 import DesktopStatusCard from "@/components/desktop/DesktopStatusCard.vue";
 import Button from "@/components/ui/Button.vue";
 import { useDesktopSummary } from "@/composables/useDesktopSummary";
+import { useDesktopI18n } from "@/composables/useI18n";
 
+const { t } = useDesktopI18n();
 const { errorMessage, isLoading, refresh, statusLabel, summary } = useDesktopSummary();
 
 onMounted(() => {
@@ -15,17 +17,17 @@ onMounted(() => {
 <template>
   <section class="desktop-shell">
     <div class="desktop-shell__hero">
-      <p class="desktop-shell__eyebrow">Tauri Desktop</p>
-      <h1 class="desktop-shell__title">Cowork now runs on a lighter desktop runtime.</h1>
+      <p class="desktop-shell__eyebrow">{{ t("shell.eyebrow") }}</p>
+      <h1 class="desktop-shell__title">{{ t("shell.title") }}</h1>
       <p class="desktop-shell__copy">
-        The desktop shell now uses Tauri 2, Vue 3, Vite 8, and Vue DevTools to reduce the memory overhead of Electron while keeping a familiar frontend workflow.
+        {{ t("shell.copy") }}
       </p>
       <div class="desktop-shell__actions">
         <Button @click="refresh">
-          {{ isLoading ? "Syncing runtime..." : "Sync runtime summary" }}
+          {{ isLoading ? t("shell.syncing") : t("shell.sync") }}
         </Button>
         <Button class="desktop-shell__secondary" variant="ghost">
-          shadcn/vue styled UI
+          {{ t("shell.uiTag") }}
         </Button>
       </div>
     </div>

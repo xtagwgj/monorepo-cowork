@@ -2,10 +2,11 @@ mod commands;
 mod domain;
 
 use commands::{app, files, system};
-use domain::sessions::SessionState;
+use domain::{access::AccessPolicy, sessions::SessionState};
 
 fn main() {
     tauri::Builder::default()
+        .manage(AccessPolicy::default())
         .manage(SessionState::default())
         .invoke_handler(tauri::generate_handler![
             app::desktop_summary,
@@ -19,6 +20,7 @@ fn main() {
             files::read_chunk,
             files::write_chunk,
             system::open_path_in_system,
+            system::pick_file,
             system::pick_folder
         ])
         .run(tauri::generate_context!())

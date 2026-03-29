@@ -1,5 +1,6 @@
 import { computed, shallowRef } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { useDesktopI18n } from "./useI18n";
 
 const DEFAULT_CHUNK_SIZE = 1024 * 1024;
 
@@ -28,7 +29,12 @@ interface FileEntry {
   isDir: boolean;
 }
 
+interface PickedPath {
+  path: string;
+}
+
 export function useFileWorkbench() {
+  const { t } = useDesktopI18n();
   const sourcePath = shallowRef("");
   const destinationDirectory = shallowRef("");
   const destinationName = shallowRef("copy.bin");
@@ -40,6 +46,7 @@ export function useFileWorkbench() {
   const isCopying = shallowRef(false);
   const isBrowsingDirectory = shallowRef(false);
   const isPreviewing = shallowRef(false);
+  const isSelectingSourceFile = shallowRef(false);
   const isSelectingFolder = shallowRef(false);
 
   const destinationPath = computed(() => {
@@ -66,6 +73,26 @@ export function useFileWorkbench() {
     errorMessage.value = null;
   }
 
+  async function pickSourceFile(): Promise<void> {
+    isSelectingSourceFile.value = true;
+    clearError();
+
+    try {
+      const picked = await invoke<PickedPath | null>("pick_file", {
+        initialDirectory: destinationDirectory.value || null
+      });
+
+      if (picked?.path) {
+        sourcePath.value = picked.path;
+        appendLog(t("file.selectedFileLog", { path: picked.path }));
+      }
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : t("file.selectFileFailed");
+    } finally {
+      isSelectingSourceFile.value = false;
+    }
+  }
+
   async function pickDestinationDirectory(): Promise<void> {
     isSelectingFolder.value = true;
     clearError();
@@ -77,10 +104,10 @@ export function useFileWorkbench() {
 
       if (selectedPath) {
         destinationDirectory.value = selectedPath;
-        appendLog(`Selected folder: ${selectedPath}`);
+        appendLog(t("file.selectedFolderLog", { path: selectedPath }));
       }
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : "Failed to select a folder.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.selectFolderFailed");
     } finally {
       isSelectingFolder.value = false;
     }
@@ -95,9 +122,9 @@ export function useFileWorkbench() {
 
     try {
       await invoke("open_path_in_system", { path: destinationDirectory.value });
-      appendLog(`Opened in system shell: ${destinationDirectory.value}`);
+      appendLog(t("file.openedFolderLog", { path: destinationDirectory.value }));
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : "Failed to open the directory.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.openDirectoryFailed");
     }
   }
 
@@ -113,10 +140,15 @@ export function useFileWorkbench() {
       directoryEntries.value = await invoke<FileEntry[]>("list_directory", {
         path: destinationDirectory.value
       });
-      appendLog(`Loaded ${directoryEntries.value.length} entries from ${destinationDirectory.value}`);
+      appendLog(
+        t("file.loadedFolderLog", {
+          count: directoryEntries.value.length,
+          path: destinationDirectory.value
+        })
+      );
     } catch (error) {
       directoryEntries.value = [];
-      errorMessage.value = error instanceof Error ? error.message : "Failed to read the folder.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.readFolderFailed");
     } finally {
       isBrowsingDirectory.value = false;
     }
@@ -144,10 +176,10 @@ export function useFileWorkbench() {
       });
 
       previewText.value = new TextDecoder().decode(Uint8Array.from(chunk.bytes));
-      appendLog(`Read ${chunk.bytesRead} bytes for preview from ${sourcePath.value}`);
+      appendLog(t("file.previewLog", { count: chunk.bytesRead, path: sourcePath.value }));
     } catch (error) {
       previewText.value = "";
-      errorMessage.value = error instanceof Error ? error.message : "Failed to preview the file.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.previewFailed");
     } finally {
       if (readSessionId !== null) {
         await invoke("close_read_session", { sessionId: readSessionId }).catch(() => undefined);
@@ -204,10 +236,16 @@ export function useFileWorkbench() {
       }
 
       await invoke("flush_write_session", { sessionId: writeSessionId });
-      appendLog(`Copied ${sourcePath.value} to ${destinationPath.value} with ${chunkSize.value} byte chunks.`);
+      appendLog(
+        t("file.copiedLog", {
+          source: sourcePath.value,
+          destination: destinationPath.value,
+          chunkSize: chunkSize.value
+        })
+      );
       await listSelectedDirectory();
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : "Failed to copy the file.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.copyFailed");
     } finally {
       if (readSessionId !== null) {
         await invoke("close_read_session", { sessionId: readSessionId }).catch(() => undefined);
@@ -237,11 +275,14 @@ export function useFileWorkbench() {
       });
 
       appendLog(
-        `Backend streamed ${result.totalBytesWritten.toLocaleString()} bytes to ${destinationPath.value}.`
+        t("file.backendCopiedLog", {
+          count: result.totalBytesWritten.toLocaleString(),
+          path: destinationPath.value
+        })
       );
       await listSelectedDirectory();
     } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : "Backend copy failed.";
+      errorMessage.value = error instanceof Error ? error.message : t("file.backendCopyFailed");
     } finally {
       isCopying.value = false;
     }
@@ -262,9 +303,11 @@ export function useFileWorkbench() {
     isCopying,
     isPreviewing,
     isSelectingFolder,
+    isSelectingSourceFile,
     listSelectedDirectory,
     openDestinationDirectory,
     pickDestinationDirectory,
+    pickSourceFile,
     previewSourceChunk,
     previewText,
     sourcePath

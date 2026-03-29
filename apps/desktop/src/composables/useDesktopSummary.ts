@@ -1,5 +1,6 @@
 import { computed, shallowRef } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { useDesktopI18n } from "./useI18n";
 
 export interface DesktopSummary {
   appName: string;
@@ -9,20 +10,21 @@ export interface DesktopSummary {
 }
 
 export function useDesktopSummary() {
+  const { t } = useDesktopI18n();
   const summary = shallowRef<DesktopSummary | null>(null);
   const errorMessage = shallowRef<string | null>(null);
   const isLoading = shallowRef(false);
 
   const statusLabel = computed(() => {
     if (isLoading.value) {
-      return "Loading runtime";
+      return t("runtime.loading");
     }
 
     if (errorMessage.value) {
-      return "Runtime unavailable";
+      return t("runtime.unavailable");
     }
 
-    return "Runtime ready";
+    return t("runtime.ready");
   });
 
   async function refresh(): Promise<void> {
@@ -33,7 +35,7 @@ export function useDesktopSummary() {
       summary.value = await invoke<DesktopSummary>("desktop_summary");
     } catch (error) {
       summary.value = null;
-      errorMessage.value = error instanceof Error ? error.message : "Failed to reach the Tauri backend.";
+      errorMessage.value = error instanceof Error ? error.message : t("runtime.unavailable");
     } finally {
       isLoading.value = false;
     }

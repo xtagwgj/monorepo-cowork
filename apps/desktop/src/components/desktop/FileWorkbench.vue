@@ -2,7 +2,9 @@
 import { computed } from "vue";
 import Button from "@/components/ui/Button.vue";
 import { useFileWorkbench } from "@/composables/useFileWorkbench";
+import { useDesktopI18n } from "@/composables/useI18n";
 
+const { t } = useDesktopI18n();
 const {
   activityLog,
   canCopy,
@@ -18,9 +20,11 @@ const {
   isCopying,
   isPreviewing,
   isSelectingFolder,
+  isSelectingSourceFile,
   listSelectedDirectory,
   openDestinationDirectory,
   pickDestinationDirectory,
+  pickSourceFile,
   previewSourceChunk,
   previewText,
   sourcePath
@@ -33,97 +37,112 @@ const entryPreview = computed(() => directoryEntries.value.slice(0, 8));
   <section class="workbench">
     <div class="workbench__intro">
       <div>
-        <p class="workbench__eyebrow">File Workbench</p>
-        <h2 class="workbench__title">Chunked IO for large files</h2>
+        <p class="workbench__eyebrow">{{ t("file.eyebrow") }}</p>
+        <h2 class="workbench__title">{{ t("file.title") }}</h2>
       </div>
       <p class="workbench__copy">
-        Reads and writes run through buffered Rust sessions so multi-GB transfers do not need to load the full file into memory.
+        {{ t("file.copy") }}
       </p>
     </div>
 
     <div class="workbench__grid">
       <label class="workbench__field">
-        <span>Source file path</span>
-        <input v-model="sourcePath" class="workbench__input" placeholder="/path/to/source.iso" />
+        <span>{{ t("file.sourceFilePath") }}</span>
+        <div class="workbench__input-row">
+          <input
+            v-model="sourcePath"
+            class="workbench__input"
+            :placeholder="t('file.sourcePlaceholder')"
+          />
+          <Button :disabled="isSelectingSourceFile" variant="outline" @click="pickSourceFile">
+            {{ isSelectingSourceFile ? t("file.choosingFile") : t("file.chooseFile") }}
+          </Button>
+        </div>
       </label>
 
       <label class="workbench__field">
-        <span>Destination folder</span>
+        <span>{{ t("file.destinationFolder") }}</span>
         <div class="workbench__input-row">
           <input
             v-model="destinationDirectory"
             class="workbench__input"
-            placeholder="/path/to/output"
+            :placeholder="t('file.destinationPlaceholder')"
           />
           <Button
             :disabled="isSelectingFolder"
             variant="outline"
             @click="pickDestinationDirectory"
           >
-            {{ isSelectingFolder ? "Picking..." : "Choose folder" }}
+            {{ isSelectingFolder ? t("file.choosingFolder") : t("file.chooseFolder") }}
           </Button>
         </div>
       </label>
 
       <label class="workbench__field">
-        <span>Output file name</span>
-        <input v-model="destinationName" class="workbench__input" placeholder="copy.bin" />
+        <span>{{ t("file.outputFileName") }}</span>
+        <input
+          v-model="destinationName"
+          class="workbench__input"
+          :placeholder="t('file.outputPlaceholder')"
+        />
       </label>
 
       <label class="workbench__field">
-        <span>Chunk size in bytes</span>
+        <span>{{ t("file.chunkSize") }}</span>
         <input v-model.number="chunkSize" class="workbench__input" min="1" step="65536" type="number" />
       </label>
     </div>
 
     <div class="workbench__actions">
       <Button :disabled="!canCopy" @click="copyByChunks">
-        {{ isCopying ? "Copying..." : "Copy with read/write sessions" }}
+        {{ isCopying ? t("file.copying") : t("file.copySessions") }}
       </Button>
       <Button :disabled="!canCopy" variant="outline" @click="copyInBackend">
-        {{ isCopying ? "Running..." : "Copy fully in Rust" }}
+        {{ isCopying ? t("file.running") : t("file.copyBackend") }}
       </Button>
       <Button :disabled="!sourcePath || isPreviewing" variant="outline" @click="previewSourceChunk">
-        {{ isPreviewing ? "Reading..." : "Preview first chunk" }}
+        {{ isPreviewing ? t("file.reading") : t("file.previewFirstChunk") }}
       </Button>
       <Button :disabled="!destinationDirectory" variant="outline" @click="listSelectedDirectory">
-        {{ isBrowsingDirectory ? "Listing..." : "List folder" }}
+        {{ isBrowsingDirectory ? t("file.listing") : t("file.listFolder") }}
       </Button>
       <Button :disabled="!destinationDirectory" variant="ghost" @click="openDestinationDirectory">
-        Open in system
+        {{ t("file.openSystem") }}
       </Button>
     </div>
 
     <p v-if="destinationPath" class="workbench__target">
-      Target path: {{ destinationPath }}
+      {{ t("file.targetPath") }}: {{ destinationPath }}
     </p>
     <p v-if="errorMessage" class="workbench__error">{{ errorMessage }}</p>
 
     <div class="workbench__panels">
       <article class="workbench__panel">
-        <p class="workbench__panel-label">Chunk preview</p>
-        <pre class="workbench__preview">{{ previewText || "No preview loaded." }}</pre>
+        <p class="workbench__panel-label">{{ t("file.chunkPreview") }}</p>
+        <pre class="workbench__preview">{{ previewText || t("file.noPreview") }}</pre>
       </article>
 
       <article class="workbench__panel">
-        <p class="workbench__panel-label">Selected folder entries</p>
+        <p class="workbench__panel-label">{{ t("file.folderEntries") }}</p>
         <ul class="workbench__list">
           <li v-for="entry in entryPreview" :key="entry.path" class="workbench__list-item">
             <span>{{ entry.name }}</span>
-            <span>{{ entry.isDir ? "dir" : "file" }}</span>
+            <span>{{ entry.isDir ? t("file.dir") : t("file.file") }}</span>
           </li>
-          <li v-if="entryPreview.length === 0" class="workbench__list-empty">No folder listing loaded.</li>
+          <li v-if="entryPreview.length === 0" class="workbench__list-empty">
+            {{ t("file.noFolderListing") }}
+          </li>
         </ul>
       </article>
 
       <article class="workbench__panel">
-        <p class="workbench__panel-label">Activity</p>
+        <p class="workbench__panel-label">{{ t("file.activity") }}</p>
         <ul class="workbench__log">
           <li v-for="entry in activityLog" :key="entry" class="workbench__log-entry">
             {{ entry }}
           </li>
           <li v-if="activityLog.length === 0" class="workbench__list-empty">
-            Actions and transfer status will appear here.
+            {{ t("file.noActivity") }}
           </li>
         </ul>
       </article>
